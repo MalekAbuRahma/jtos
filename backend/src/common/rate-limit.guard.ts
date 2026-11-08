@@ -15,7 +15,9 @@ export class RateLimitGuard implements CanActivate {
     const limit = this.reflector.get<number | undefined>(RATE, ctx.getHandler());
     if (!limit) return true;
     const req = ctx.switchToHttp().getRequest();
-    const key = `${ctx.getClass().name}.${ctx.getHandler().name}:${req.ip}`;
+    // Signed-in people are limited per account; everyone else per network address.
+    const who = req.passenger?.id ?? req.driver?.id ?? req.staff?.id ?? req.ip;
+    const key = `${ctx.getClass().name}.${ctx.getHandler().name}:${who}`;
     const now = Date.now();
     const list = (this.hits.get(key) ?? []).filter((t) => t > now - 60_000);
     if (list.length >= limit) throw new AppError(HttpStatus.TOO_MANY_REQUESTS, 'TOO_MANY_REQUESTS', 'Too many requests. Please wait a minute and try again.');
