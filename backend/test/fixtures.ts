@@ -59,3 +59,26 @@ export const baby = (lapOf: number, o: Record<string, unknown> = {}) => ({ type:
 export function request(t: T, tok: string, body: object, key = randomUUID()) {
   return t.http().post('/v1/passenger/requests').set(S(tok)).set('Idempotency-Key', key).send({ consent: true, ...body });
 }
+
+/** A confirmed (cash) booking on a 4-stop trip; returns everything a trip-day test needs. */
+export async function confirmedBooking(t: T, travellers: object[], o: { date?: string } = {}) {
+  const d = await approvedDriver(t);
+  const date = o.date ?? addDays(today, 30 + seq);
+  const tripId = await publishedTrip(t, d.tok, amman4Stops(date));
+  const p = await passenger(t);
+  const r = await request(t, p.tok, { tripId, travellers }).expect(201);
+  const a = await t.http().post(`/v1/driver/requests/${r.body.id}/accept`).set(S(d.tok)).expect(200);
+  await t.http().post(`/v1/passenger/bookings/${a.body.bookingId}/complete`).set(S(p.tok)).send({ paymentMethod: 'cash' }).expect(200);
+  const tr = await t.db.selectFrom('travellers').select(['id', 'idx', 'type']).where('request_id', '=', r.body.id).orderBy('idx').execute();
+  return { d, p, tripId, requestId: r.body.id as string, bookingId: a.body.bookingId as string, travellerIds: tr.map((x) => x.id) };
+}
+
+/** Moves a trip to "now": stop i is at now + offsets[i] minutes. Stop 1 gets a map pin at Abdali. */
+export async function shiftToNow(t: T, tripId: string, offsets = [10, 40, 100, 280]) {
+  const at = (m: number) => new Date(Date.now() + m * 60_000);
+  await t.db.updateTable('trips').set({ travel_date: jordanDate(at(offsets[0])) }).where('id', '=', tripId).execute();
+  for (const [i, m] of offsets.entries()) await t.db.updateTable('trip_stops').set({ pickup_at: at(m) }).where('trip_id', '=', tripId).where('seq', '=', i + 1).execute();
+  await t.db.updateTable('trip_stops').set({ lat: 31.9644, lng: 35.9101 }).where('trip_id', '=', tripId).where('seq', '=', 1).execute();
+}
+export const ABDALI = { lat: 31.9646, lng: 35.9104 };     // ~35 m from the pin
+export const FAR = { lat: 31.9739, lng: 35.9101 };        // ~1 km away
