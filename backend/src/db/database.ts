@@ -87,6 +87,7 @@ export interface PassengersTable {
   email: string;
   full_name: string;
   status: Generated<string>;
+  consent_documents_at: Date | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -215,6 +216,64 @@ export interface WarningsTable {
   ref_id: string | null;
   at: Generated<Date>;
 }
+export type RequestStatus = 'waiting' | 'accepted' | 'rejected' | 'expired' | 'withdrawn' | 'closed_trip_full' | 'trip_cancelled';
+export interface BookingRequestsTable {
+  id: Generated<string>;
+  trip_id: string;
+  passenger_id: string;
+  kind: 'seats' | 'whole';
+  seats: number;
+  head_count: number;
+  board_seq: number;
+  total_fils: number;
+  terms_snapshot: ColumnType<Record<string, any>, string, string>;
+  settings_version_id: string;
+  deadline_at: Ts;
+  status: Generated<RequestStatus>;
+  reject_reason: string | null;
+  driver_opened_at: Date | null;
+  whatsapp_backup_at: Date | null;
+  action_id: string;
+  decided_at: Date | null;
+  created_at: Generated<Date>;
+}
+export interface TravellersTable {
+  id: Generated<string>;
+  request_id: string;
+  idx: number;
+  type: 'adult' | 'child' | 'baby';
+  full_name: string | null;
+  date_of_birth: string | null;
+  doc_type: 'passport' | 'national_id' | null;
+  doc_number_enc: string | null;
+  doc_hash: string | null;
+  doc_expiry: string | null;
+  responsibility_ticked: Generated<boolean>;
+  board_seq: number;
+  board_spot: string | null;
+  lap_of_idx: number | null;
+  price_fils: number;
+  contact: string | null;
+  boarding_status: Generated<'pending' | 'boarded' | 'no_show'>;
+  personal_deleted_at: Date | null;
+}
+export type BookingStatus = 'awaiting_completion' | 'confirmed' | 'completed' | 'no_show' | 'cancelled';
+export interface BookingsTable {
+  id: Generated<string>;
+  request_id: string;
+  trip_id: string;
+  passenger_id: string;
+  code: string;
+  status: Generated<BookingStatus>;
+  payment_method: string | null;
+  total_fils: number;
+  completed_booking_at: Date | null;
+  cancelled_at: Date | null;
+  cancel_reason: string | null;
+  counts_toward_warning: boolean | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
 export interface DB {
   staff: StaffTable;
   staff_login_codes: StaffLoginCodesTable;
@@ -234,6 +293,9 @@ export interface DB {
   trips: TripsTable;
   trip_stops: TripStopsTable;
   warnings: WarningsTable;
+  booking_requests: BookingRequestsTable;
+  travellers: TravellersTable;
+  bookings: BookingsTable;
 }
 
 export function createDb(url: string): Kysely<DB> {

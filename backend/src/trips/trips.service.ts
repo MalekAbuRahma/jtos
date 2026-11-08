@@ -13,6 +13,7 @@ import { EligibilityService } from '../drivers/eligibility.service';
 import { SettingsValues } from '../settings/definitions';
 import { SettingsService } from '../settings/settings.service';
 import { CatalogService, City } from './catalog.service';
+import { BookingService } from '../booking/booking.service';
 
 type Driver = { id: string; status: string; phone: string };
 interface StopIn { city: string; spot: string; time: string; price?: number | null }
@@ -33,6 +34,7 @@ export class TripsService {
     private eligibility: EligibilityService,
     private audit: AuditService,
     private messaging: MessagingService,
+    private booking: BookingService,
   ) {}
 
   // ---------------- validation ----------------
@@ -221,7 +223,7 @@ export class TripsService {
       await this.audit.record({ actorType: 'driver', actorId: driver.id, action: 'trip.cancelled', recordType: 'trip', recordId: id, after: { reason: reason ?? null } }, trx);
       return t.status === 'published';
     });
-    // Passengers with bookings are notified here once bookings exist (T-014+).
+    if (wasPublished) await this.booking.onTripCancelled(id);
     if (wasPublished) {
       const n = Number((await this.db.selectFrom('warnings').select((eb) => eb.fn.countAll<number>().as('n')).where('subject_type', '=', 'driver').where('subject_id', '=', driver.id)
         .where('kind', '=', 'trip_cancelled').where('at', '>', new Date(Date.now() - 30 * 86400_000)).executeTakeFirstOrThrow()).n);

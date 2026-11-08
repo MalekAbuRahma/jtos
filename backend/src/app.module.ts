@@ -9,6 +9,9 @@ import { CONFIG_TOKEN, DB_TOKEN } from './common/tokens';
 import { AppConfig } from './config';
 import { DB } from './db/database';
 import { HealthController } from './health.controller';
+import { DriverRequestsController, PassengerBookingController } from './booking/booking.controller';
+import { BookingViewService } from './booking/booking-view.service';
+import { BookingService } from './booking/booking.service';
 import { RateLimitGuard } from './common/rate-limit.guard';
 import { CatalogService } from './trips/catalog.service';
 import { SearchService } from './trips/search.service';
@@ -39,7 +42,8 @@ export class AppModule {
       imports: [JwtModule.register({ secret: cfg.jwtSecret })],
       controllers: [HealthController, StaffAuthController, StaffController, SettingsController, AuditController,
         PassengerAuthController, PassengerMeController, DriverAuthController, DriverMeController, ApplicationsController,
-        DriverTripsController, PublicController, StaffTripsController],
+        DriverTripsController, PublicController, StaffTripsController,
+        PassengerBookingController, DriverRequestsController],
       providers: [
         { provide: CONFIG_TOKEN, useValue: cfg },
         { provide: DB_TOKEN, useValue: db },
@@ -47,6 +51,7 @@ export class AppModule {
         MessagingService, OtpService, PassengerAuthGuard, DriverAuthGuard, PassengerAuthService,
         DriverService, EligibilityService, ExpiryJobService, ApplicationsService,
         RateLimitGuard, CatalogService, SearchService, TripsService,
+        BookingService, BookingViewService,
       ],
     };
   }
