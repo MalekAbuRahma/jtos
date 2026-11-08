@@ -9,6 +9,8 @@ import { CONFIG_TOKEN, DB_TOKEN } from './common/tokens';
 import { AppConfig } from './config';
 import { DB } from './db/database';
 import { HealthController } from './health.controller';
+import { DriverExtrasController, PassengerExtrasController, PublicShareController } from './extras/extras.controller';
+import { ExtrasService } from './extras/extras.service';
 import { CasesService } from './cases/cases.service';
 import { CorrectionsService } from './tripday/corrections.service';
 import { PassengerTripDayService } from './tripday/passenger-tripday.service';
@@ -49,7 +51,8 @@ export class AppModule {
         PassengerAuthController, PassengerMeController, DriverAuthController, DriverMeController, ApplicationsController,
         DriverTripsController, PublicController, StaffTripsController,
         PassengerBookingController, DriverRequestsController,
-        DriverTripDayController, PassengerTripDayController, StaffCasesController],
+        DriverTripDayController, PassengerTripDayController, StaffCasesController,
+        PassengerExtrasController, DriverExtrasController, PublicShareController],
       providers: [
         { provide: CONFIG_TOKEN, useValue: cfg },
         { provide: DB_TOKEN, useValue: db },
@@ -59,6 +62,7 @@ export class AppModule {
         RateLimitGuard, CatalogService, SearchService, TripsService,
         BookingService, BookingViewService,
         CasesService, CorrectionsService, PassengerTripDayService, TripDayService,
+        ExtrasService,
       ],
     };
   }
