@@ -9,6 +9,11 @@ import { CONFIG_TOKEN, DB_TOKEN } from './common/tokens';
 import { AppConfig } from './config';
 import { DB } from './db/database';
 import { HealthController } from './health.controller';
+import { RateLimitGuard } from './common/rate-limit.guard';
+import { CatalogService } from './trips/catalog.service';
+import { SearchService } from './trips/search.service';
+import { DriverTripsController, PublicController, StaffTripsController } from './trips/trips.controller';
+import { TripsService } from './trips/trips.service';
 import { MessagingService } from './common/messaging.service';
 import { OtpService } from './common/otp.service';
 import { DriverAuthGuard, PassengerAuthGuard } from './common/person-auth.guard';
@@ -33,13 +38,15 @@ export class AppModule {
       module: AppModule,
       imports: [JwtModule.register({ secret: cfg.jwtSecret })],
       controllers: [HealthController, StaffAuthController, StaffController, SettingsController, AuditController,
-        PassengerAuthController, PassengerMeController, DriverAuthController, DriverMeController, ApplicationsController],
+        PassengerAuthController, PassengerMeController, DriverAuthController, DriverMeController, ApplicationsController,
+        DriverTripsController, PublicController, StaffTripsController],
       providers: [
         { provide: CONFIG_TOKEN, useValue: cfg },
         { provide: DB_TOKEN, useValue: db },
         AuditService, EmailService, SettingsService, StaffAuthService, StaffService, StaffAuthGuard,
         MessagingService, OtpService, PassengerAuthGuard, DriverAuthGuard, PassengerAuthService,
         DriverService, EligibilityService, ExpiryJobService, ApplicationsService,
+        RateLimitGuard, CatalogService, SearchService, TripsService,
       ],
     };
   }
