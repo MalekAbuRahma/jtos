@@ -1,12 +1,36 @@
 # JTOS backend (NestJS + PostgreSQL)
 
-Built so far:
-- **Foundation** — staff sign-in (T-005), roles and permissions (T-006, T-007), audit history (T-008), versioned settings (T-009, T-024 commission setting).
-- **Sign-up** — passenger accounts with WhatsApp/SMS codes and email recovery (T-001); driver application, car, documents (T-002); staff review queue (T-003); renewals, car changes, expiry warnings and the publish-date rule (T-004).
+Built so far — **all Release 1 backend stories (T-001 to T-028, T-035)**:
 
-- **Trips and search** — drivers draft, publish, repeat, lower the price ("Last chance") and cancel trips (T-010, T-011); passengers search cheapest first with badges and see trip details without the plate (T-012); seat/whole-vehicle capacity rules (T-013, finished together with booking requests T-014). Admin price ranges per section; staff suspend trips.
+| Area | Stories |
+|---|---|
+| Staff, roles, audit, settings | T-005–T-009, T-024 (commission setting, 0 %) |
+| Passenger and driver accounts, driver approval, renewals, expiry | T-001–T-004 |
+| Trips, publishing, search, capacity | T-010–T-013 |
+| Requests, travellers, accept/reject, complete with cash, limits | T-014–T-018 |
+| Trip day: arrival, waiting, boarding, no-show, offline sync, late driver | T-019–T-023 |
+| Cash received, cash cases, corrections, earnings | T-025–T-028 |
+| Booking page: plate after completion, chat, Share trip, ratings, cancel | T-017, T-035, Q13 |
 
-Not yet: Support moving an account to a new number (T-001 TC-10, staff tool), passenger view of car/driver (T-002 TC-11, comes with search T-012), platform-wide rate limits (SEC-001).
+Release 2 (not built): settlement T-029–T-034, online payment.
+
+**Team decisions made while building (Prof approved, recorded in Jira):**
+- Arrival check uses a map pin per stop (300 m). A stop without a pin is checked against the city centre (15 km).
+- "I've arrived" is accepted from 2 hours before the pickup time.
+- Seats are held while a request waits, so a trip can't overfill; "trip full" closing stays as a safety net.
+- Share trip page shows driver first name, car, plate and live position while running — never passports or phone numbers.
+- Removing a traveller: before acceptance the price drops and seats are freed; after acceptance the seat stays paid.
+
+Still open: Support moving a passenger to a new number (T-001 TC-10), real WhatsApp/SMS/email/push providers (staging prints to the log).
+
+## Background jobs (run inside the API)
+| Job | Every |
+|---|---|
+| Expire requests at their deadline, release seats | 1 min |
+| WhatsApp backup to drivers who didn't open a request | 5 min |
+| Driver late (30 min) → tell passengers, warn driver | 1 min |
+| Document expiry warnings (30 days) | 6 h |
+| Delete traveller document data 30 days after the trip | 1 h |
 
 ## Run locally
 ```bash
@@ -52,6 +76,20 @@ npm run dev                     # http://localhost:3000/health
 | GET | /v1/public/trips/:id?from=, /v1/public/drivers/:id/photo | anyone — no plate, no documents |
 | GET/PUT | /v1/staff/price-ranges | view: all roles · change: Admin |
 | GET | /v1/staff/trips · POST /trips/:id/suspend, /unsuspend | staff |
+| POST | /v1/passenger/requests (Idempotency-Key) · GET /requests, /requests/:id · POST /requests/:id/withdraw | passenger |
+| POST | /v1/passenger/requests/:id/travellers/:idx/remove | passenger |
+| GET/POST | /v1/passenger/bookings, /bookings/:id, /complete, /cancel-preview, /cancel | passenger |
+| POST | /v1/passenger/bookings/:id/dispute-no-show, /cash-case, /rating, /share-link · GET/POST /messages | passenger |
+| GET/POST | /v1/passenger/cases, /cases/:id/statement | passenger |
+| GET/POST | /v1/driver/requests, /requests/:id, /accept, /reject | driver |
+| GET | /v1/driver/trips/:id/board | driver (today's list) |
+| POST | /v1/driver/trips/:id/stops/:seq/arrived, /leave · /trips/:id/complete, /position | driver |
+| POST | /v1/driver/travellers/:id/boarded, /no-show · /bookings/:id/contact-attempt, /cash, /cash-case, /rating | driver |
+| POST | /v1/driver/sync (offline actions) · GET /v1/driver/earnings?period= · GET/POST /messages, /cases | driver |
+| GET | /v1/public/share/:token | family (Share trip) |
+| GET/POST | /v1/staff/cases, /cases/:id, /ask, /resolve | staff (resolve: Admin, Support) |
+| POST | /v1/staff/corrections/service, /cash (Admin) · /corrections/requests (Support) | staff |
+| GET | /v1/staff/bookings/:id/cash · /reports/late-drivers | staff |
 
 ## Safety rules in code
 - Permissions are checked on the server for every endpoint; the staff row is reloaded on every request, so removing a role works at once.

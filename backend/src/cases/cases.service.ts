@@ -7,6 +7,7 @@ import { StaffUser } from '../common/staff-auth.guard';
 import { maskContacts } from '../common/text';
 import { DB_TOKEN } from '../common/tokens';
 import { DB } from '../db/database';
+import { decrypt } from '../common/data-crypto';
 import { SettingsService } from '../settings/settings.service';
 
 export type CaseType = 'cash' | 'no_show_dispute' | 'correction_request' | 'other';
@@ -80,7 +81,9 @@ export class CasesService {
       contactAttempts = await this.db.selectFrom('contact_attempts').select(['kind', 'at']).where('booking_id', '=', c.booking_id).orderBy('at').execute();
       if (booking) stopEvents = await this.db.selectFrom('trip_stops').select(['seq', 'pickup_at as pickupAt', 'arrived_at as arrivedAt', 'left_at as leftAt']).where('trip_id', '=', booking.tripId).orderBy('seq').execute();
     }
-    return { ...c, statements, booking, cash, travellers, contactAttempts, stops: stopEvents };
+    const chat = c.booking_id ? (await this.db.selectFrom('chat_messages').select(['sender_type', 'body_raw_enc', 'created_at']).where('booking_id', '=', c.booking_id).orderBy('created_at').execute())
+      .map((m) => ({ from: m.sender_type, text: decrypt(m.body_raw_enc), at: m.created_at })) : [];
+    return { ...c, statements, booking, cash, travellers, contactAttempts, stops: stopEvents, chat };
   }
 
   async askReply(staff: StaffUser, id: string) {

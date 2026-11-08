@@ -88,6 +88,8 @@ export interface PassengersTable {
   full_name: string;
   status: Generated<string>;
   consent_documents_at: Date | null;
+  rating_avg: string | null;
+  rating_count: Generated<number>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -196,6 +198,9 @@ export interface TripsTable {
   cancelled_reason: string | null;
   started_at: Date | null;
   completed_at: Date | null;
+  last_lat: number | null;
+  last_lng: number | null;
+  last_position_at: Date | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -296,6 +301,7 @@ export interface TravellersTable {
   personal_deleted_at: Date | null;
   boarded_at: Date | null;
   no_show_at: Date | null;
+  removed_at: Date | null;
 }
 export type BookingStatus = 'awaiting_completion' | 'confirmed' | 'completed' | 'no_show' | 'cancelled';
 export interface BookingsTable {
@@ -314,6 +320,14 @@ export interface BookingsTable {
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
+export interface RatingsTable {
+  id: Generated<string>; booking_id: string; from_type: 'passenger' | 'driver'; from_id: string; to_type: string; to_id: string;
+  stars: number; comment: string | null; hidden: Generated<boolean>; created_at: Generated<Date>;
+}
+export interface ChatMessagesTable {
+  id: Generated<string>; booking_id: string; sender_type: 'passenger' | 'driver'; sender_id: string; body_masked: string; body_raw_enc: string; created_at: Generated<Date>;
+}
+export interface ShareLinksTable { id: Generated<string>; booking_id: string; token_hash: string; created_at: Generated<Date>; }
 export interface DB {
   staff: StaffTable;
   staff_login_codes: StaffLoginCodesTable;
@@ -343,6 +357,9 @@ export interface DB {
   service_corrections: ServiceCorrectionsTable;
   cases: CasesTable;
   case_statements: CaseStatementsTable;
+  ratings: RatingsTable;
+  chat_messages: ChatMessagesTable;
+  share_links: ShareLinksTable;
 }
 
 export function createDb(url: string): Kysely<DB> {

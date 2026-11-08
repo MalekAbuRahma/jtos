@@ -49,6 +49,8 @@ export class CorrectionsService {
         const anyBoarded = await trx.selectFrom('travellers').select('id').where('request_id', '=', x.request_id).where('boarding_status', '=', 'boarded').executeTakeFirst();
         bookingAfter = anyBoarded ? 'completed' : 'no_show';
         await trx.updateTable('bookings').set({ status: bookingAfter as any, updated_at: new Date() }).where('id', '=', x.bookingId).execute();
+        // A rating given on a trip that turns out not to have happened is hidden for review (T-021).
+        if (bookingAfter === 'no_show') await trx.updateTable('ratings').set({ hidden: true }).where('booking_id', '=', x.bookingId).execute();
       }
       const after = { boarding: newStatus, booking: bookingAfter };
       await trx.insertInto('service_corrections').values({ traveller_id: x.id, before: JSON.stringify(before), after: JSON.stringify(after), reason: reason.trim(), staff_id: staff.id }).execute();
