@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+# Builds
+dist/
+build/
+.dart_tool/
+.flutter-plugins*
+*.iml
+# Environment and secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+google-services.json
+GoogleService-Info.plist
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+# Logs
+*.log
+coverage/
