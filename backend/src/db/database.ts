@@ -174,7 +174,7 @@ export interface PriceRangesTable {
   updated_by: string | null;
   updated_at: Generated<Date>;
 }
-export type TripStatus = 'draft' | 'published' | 'suspended' | 'cancelled' | 'completed';
+export type TripStatus = 'draft' | 'published' | 'running' | 'suspended' | 'cancelled' | 'completed';
 export interface TripsTable {
   id: Generated<string>;
   driver_id: string;
@@ -194,6 +194,8 @@ export interface TripsTable {
   published_at: Date | null;
   suspended_reason: string | null;
   cancelled_reason: string | null;
+  started_at: Date | null;
+  completed_at: Date | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -206,6 +208,11 @@ export interface TripStopsTable {
   pickup_at: Ts;
   section_price_fils: number | null;
   last_chance_price_fils: number | null;
+  lat: number | null;
+  lng: number | null;
+  arrived_at: Date | null;
+  left_at: Date | null;
+  late_notified_at: Date | null;
 }
 export interface WarningsTable {
   id: Generated<string>;
@@ -215,7 +222,38 @@ export interface WarningsTable {
   ref_type: string | null;
   ref_id: string | null;
   at: Generated<Date>;
+  void: Generated<boolean>;
+  under_review: Generated<boolean>;
 }
+export interface DriverActionsTable {
+  action_id: string;
+  driver_id: string;
+  kind: string;
+  device_at: Date | null;
+  lat: number | null;
+  lng: number | null;
+  status: 'accepted' | 'rejected';
+  result: ColumnType<any, string, string>;
+  created_at: Generated<Date>;
+}
+export interface ContactAttemptsTable { id: Generated<string>; booking_id: string; driver_id: string; kind: 'call' | 'message'; at: Generated<Date>; }
+export interface CashRecordsTable {
+  id: Generated<string>; booking_id: string; due_fils: number; received_fils: number; status: 'full' | 'part' | 'not_paid';
+  driver_id: string; at: Generated<Date>; lat: number | null; lng: number | null;
+}
+export interface CashCorrectionsTable {
+  id: Generated<string>; cash_record_id: string; old_received_fils: number; new_received_fils: number; reason: string; staff_id: string; action_id: string; at: Generated<Date>;
+}
+export interface ServiceCorrectionsTable {
+  id: Generated<string>; traveller_id: string; before: ColumnType<any, string, string>; after: ColumnType<any, string, string>; reason: string; staff_id: string; at: Generated<Date>;
+}
+export interface CasesTable {
+  id: Generated<string>; code: string; type: 'cash' | 'no_show_dispute' | 'correction_request' | 'other';
+  booking_id: string | null; traveller_id: string | null; status: Generated<'open' | 'waiting_reply' | 'for_admin' | 'resolved'>;
+  reason: string | null; opened_by_type: string; opened_by_id: string | null; resolution_note: string | null;
+  resolved_by: string | null; resolved_at: Date | null; created_at: Generated<Date>;
+}
+export interface CaseStatementsTable { id: Generated<string>; case_id: string; author_type: string; author_id: string | null; text: string; created_at: Generated<Date>; }
 export type RequestStatus = 'waiting' | 'accepted' | 'rejected' | 'expired' | 'withdrawn' | 'closed_trip_full' | 'trip_cancelled';
 export interface BookingRequestsTable {
   id: Generated<string>;
@@ -256,6 +294,8 @@ export interface TravellersTable {
   contact: string | null;
   boarding_status: Generated<'pending' | 'boarded' | 'no_show'>;
   personal_deleted_at: Date | null;
+  boarded_at: Date | null;
+  no_show_at: Date | null;
 }
 export type BookingStatus = 'awaiting_completion' | 'confirmed' | 'completed' | 'no_show' | 'cancelled';
 export interface BookingsTable {
@@ -296,6 +336,13 @@ export interface DB {
   booking_requests: BookingRequestsTable;
   travellers: TravellersTable;
   bookings: BookingsTable;
+  driver_actions: DriverActionsTable;
+  contact_attempts: ContactAttemptsTable;
+  cash_records: CashRecordsTable;
+  cash_corrections: CashCorrectionsTable;
+  service_corrections: ServiceCorrectionsTable;
+  cases: CasesTable;
+  case_statements: CaseStatementsTable;
 }
 
 export function createDb(url: string): Kysely<DB> {

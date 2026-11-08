@@ -16,12 +16,12 @@ import { CatalogService, City } from './catalog.service';
 import { BookingService } from '../booking/booking.service';
 
 type Driver = { id: string; status: string; phone: string };
-interface StopIn { city: string; spot: string; time: string; price?: number | null }
+interface StopIn { city: string; spot: string; time: string; price?: number | null; lat?: number; lng?: number }
 export interface TripIn { date: string; stops: StopIn[]; seatsOffered: number; bookingType: 'seats' | 'whole' | 'both'; wholePrice?: number | null; responseWindowMinutes: number; notes?: string }
 
 interface Normalized {
   date: string; seatsOffered: number; bookingType: 'seats' | 'whole' | 'both'; wholePrice: number | null; responseWindow: number; notes: string | null;
-  stops: { city: City; spot: string; at: Date; price: number | null }[];
+  stops: { city: City; spot: string; at: Date; price: number | null; lat: number | null; lng: number | null }[];
 }
 
 /** T-010 draft a trip, T-011 publish, T-013 capacity rules (driver side). */
@@ -51,7 +51,8 @@ export class TripsService {
       const at = jordanDateTime(input.date, s?.time);
       if (!at) { errors.push(`Stop ${i + 1}: enter the time as HH:MM.`); continue; }
       if (typeof s.spot !== 'string' || !s.spot.trim()) errors.push(`Stop ${i + 1} (${city.name_en}): enter the exact pickup spot.`);
-      stops.push({ city, spot: maskContacts((s.spot ?? '').trim()).slice(0, 200), at, price: s.price ?? null });
+      const pin = typeof s.lat === 'number' && typeof s.lng === 'number' && Math.abs(s.lat) <= 90 && Math.abs(s.lng) <= 180;
+      stops.push({ city, spot: maskContacts((s.spot ?? '').trim()).slice(0, 200), at, price: s.price ?? null, lat: pin ? s.lat! : null, lng: pin ? s.lng! : null });
     }
     if (new Set(stops.map((s) => s.city.code)).size !== stops.length) errors.push('Each city can appear only once.');
     for (let i = 1; i < stops.length; i++) if (stops[i].at <= stops[i - 1].at) errors.push(`Stop times must be in order: ${stops[i].city.name_en} is not after ${stops[i - 1].city.name_en}.`);
@@ -114,6 +115,7 @@ export class TripsService {
     await trx.deleteFrom('trip_stops').where('trip_id', '=', tripId).execute();
     await trx.insertInto('trip_stops').values(n.stops.map((s, i) => ({
       trip_id: tripId, seq: i + 1, city_id: s.city.id, spot: s.spot, pickup_at: s.at, section_price_fils: s.price, last_chance_price_fils: null,
+      lat: s.lat, lng: s.lng, arrived_at: null, left_at: null, late_notified_at: null,
     }))).execute();
   }
 
@@ -263,9 +265,9 @@ export class TripsService {
 
   private async asInput(id: string): Promise<TripIn> {
     const t = await this.db.selectFrom('trips').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
-    const stops = await this.db.selectFrom('trip_stops as s').innerJoin('cities as c', 'c.id', 's.city_id').select(['c.code', 's.spot', 's.pickup_at', 's.section_price_fils'])
+    const stops = await this.db.selectFrom('trip_stops as s').innerJoin('cities as c', 'c.id', 's.city_id').select(['c.code', 's.spot', 's.pickup_at', 's.section_price_fils', 's.lat', 's.lng'])
       .where('s.trip_id', '=', id).orderBy('s.seq').execute();
     return { date: t.travel_date, seatsOffered: t.seats_offered, bookingType: t.booking_type, wholePrice: t.whole_price_fils, responseWindowMinutes: t.response_window_min, notes: t.notes ?? undefined,
-      stops: stops.map((s) => ({ city: s.code, spot: s.spot, time: jordanHHMM(s.pickup_at), price: s.section_price_fils })) };
+      stops: stops.map((s) => ({ city: s.code, spot: s.spot, time: jordanHHMM(s.pickup_at), price: s.section_price_fils, lat: s.lat ?? undefined, lng: s.lng ?? undefined })) };
   }
 }
