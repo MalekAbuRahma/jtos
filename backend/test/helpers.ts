@@ -6,6 +6,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { hashPassword } from '../src/common/crypto';
 import { EmailService } from '../src/common/email.service';
+import { MessagingService } from '../src/common/messaging.service';
 import { AppConfig } from '../src/config';
 import { createDb } from '../src/db/database';
 import { migrate } from '../src/db/migrate';
@@ -28,6 +29,7 @@ export async function buildApp() {
   const app: INestApplication = mod.createNestApplication();
   await app.init();
   const email = app.get(EmailService);
+  const messaging = app.get(MessagingService);
   const http = () => request(app.getHttpServer());
 
   /** Creates an active staff member directly (test setup only). */
@@ -47,5 +49,13 @@ export async function buildApp() {
     return r2.body.token as string;
   }
 
-  return { app, db, email, http, seedStaff, signIn, close: async () => { await app.close(); await db.destroy(); } };
+  /** Latest code sent to a phone (WhatsApp/SMS) or email. */
+  function lastCode(to: string): string {
+    const all = [...messaging.sent.map((m) => ({ to: m.to, body: m.body })), ...email.sent.map((m) => ({ to: m.to, body: m.body }))];
+    const m = all.reverse().find((x) => x.to === to && /code is \d{6}/.test(x.body));
+    if (!m) throw new Error(`no code sent to ${to}`);
+    return m.body.match(/code is (\d{6})/)![1];
+  }
+
+  return { app, db, email, messaging, http, seedStaff, signIn, lastCode, close: async () => { await app.close(); await db.destroy(); } };
 }

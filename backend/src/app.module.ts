@@ -9,6 +9,17 @@ import { CONFIG_TOKEN, DB_TOKEN } from './common/tokens';
 import { AppConfig } from './config';
 import { DB } from './db/database';
 import { HealthController } from './health.controller';
+import { MessagingService } from './common/messaging.service';
+import { OtpService } from './common/otp.service';
+import { DriverAuthGuard, PassengerAuthGuard } from './common/person-auth.guard';
+import { ApplicationsController } from './drivers/applications.controller';
+import { ApplicationsService } from './drivers/applications.service';
+import { DriverAuthController, DriverMeController } from './drivers/driver.controller';
+import { DriverService } from './drivers/driver.service';
+import { EligibilityService } from './drivers/eligibility.service';
+import { ExpiryJobService } from './drivers/expiry-job.service';
+import { PassengerAuthController, PassengerMeController } from './passengers/passenger.controller';
+import { PassengerAuthService } from './passengers/passenger-auth.service';
 import { SettingsController } from './settings/settings.controller';
 import { SettingsService } from './settings/settings.service';
 import { StaffAuthService } from './staff/staff-auth.service';
@@ -21,11 +32,14 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [JwtModule.register({ secret: cfg.jwtSecret })],
-      controllers: [HealthController, StaffAuthController, StaffController, SettingsController, AuditController],
+      controllers: [HealthController, StaffAuthController, StaffController, SettingsController, AuditController,
+        PassengerAuthController, PassengerMeController, DriverAuthController, DriverMeController, ApplicationsController],
       providers: [
         { provide: CONFIG_TOKEN, useValue: cfg },
         { provide: DB_TOKEN, useValue: db },
         AuditService, EmailService, SettingsService, StaffAuthService, StaffService, StaffAuthGuard,
+        MessagingService, OtpService, PassengerAuthGuard, DriverAuthGuard, PassengerAuthService,
+        DriverService, EligibilityService, ExpiryJobService, ApplicationsService,
       ],
     };
   }
