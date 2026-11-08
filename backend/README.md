@@ -1,6 +1,10 @@
 # JTOS backend (NestJS + PostgreSQL)
 
-Built so far: **foundation** — staff sign-in (T-005), roles and permissions (T-006, T-007), audit history (T-008), versioned settings (T-009, T-024 commission setting).
+Built so far:
+- **Foundation** — staff sign-in (T-005), roles and permissions (T-006, T-007), audit history (T-008), versioned settings (T-009, T-024 commission setting).
+- **Sign-up** — passenger accounts with WhatsApp/SMS codes and email recovery (T-001); driver application, car, documents (T-002); staff review queue (T-003); renewals, car changes, expiry warnings and the publish-date rule (T-004).
+
+Not yet: Support moving an account to a new number (T-001 TC-10, staff tool), passenger view of car/driver (T-002 TC-11, comes with search T-012), platform-wide rate limits (SEC-001).
 
 ## Run locally
 ```bash
@@ -27,10 +31,25 @@ npm run dev                     # http://localhost:3000/health
 | POST | /v1/staff/staff/:id/role, /deactivate, /resend-invitation | main admin |
 | GET/PUT | /v1/staff/settings | view: all roles · change: Admin |
 | GET | /v1/staff/audit, /audit/export (CSV) | Admin, Auditor |
+| POST | /v1/passenger/auth/code → /verify | passenger (WhatsApp, `channel: "sms"` backup) |
+| POST | /v1/passenger/auth/signup → /signup/verify-email | new passenger (name + verified email) |
+| POST | /v1/passenger/auth/recover → /recover/verify | lost phone (email code) |
+| GET / POST | /v1/passenger/me, /me/phone → /me/phone/verify | signed-in passenger |
+| POST | /v1/driver/auth/code → /verify | driver |
+| GET | /v1/driver/me | application, car, documents, checklist, warnings |
+| PUT | /v1/driver/me/profile, /me/vehicle | driver (car change after approval goes to review) |
+| POST | /v1/driver/me/documents (multipart: file, type, expiresAt) | driver (renewal after approval goes to review) |
+| POST | /v1/driver/me/application/submit | driver |
+| GET | /v1/driver/me/eligibility?date= | can a trip be published on that date (T-004) |
+| GET | /v1/staff/applications?status=, /applications/:id | drivers.view |
+| POST | /v1/staff/applications/:id/decision | drivers.review (Admin) |
+| GET | /v1/staff/documents/:id/file | documents.view — every view audited |
 
 ## Safety rules in code
 - Permissions are checked on the server for every endpoint; the staff row is reloaded on every request, so removing a role works at once.
 - The audit table refuses UPDATE/DELETE/TRUNCATE at database level.
 - Settings never change in place — each change is a new version; requests will store the version they were sent with.
 - Passwords: argon2id. Login codes and invitation links are stored only as hashes.
-- Staging sends emails to the server log (`EMAIL_DRIVER=log`) — test data only. A real email provider comes before production.
+- Codes (WhatsApp/SMS/email) are 6 digits, valid 5 min, first + 3 resends then 30 min wait; only hashes stored.
+- Driver documents: JPG/PNG/PDF ≤ 5 MB, kept private; only staff can open them.
+- Staging sends emails and WhatsApp/SMS to the server log (`EMAIL_DRIVER=log`) — test data only. A real email provider comes before production.
