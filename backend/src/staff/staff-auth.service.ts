@@ -74,7 +74,7 @@ export class StaffAuthService {
     const token = randomToken();
     await this.db.insertInto('staff_invitations')
       .values({ staff_id: staffId, token_hash: sha256(token), expires_at: new Date(Date.now() + INVITE_HOURS * 3600_000) }).execute();
-    await this.email.send(email, 'staff_invitation', `You're invited to JTOS. Set your password with this link (valid 24 hours): /set-password?token=${token}`);
+    await this.email.send(email, 'staff_invitation', `You're invited to JTOS. Set your password with this link (valid 24 hours): ${process.env.PUBLIC_URL ?? process.env.RENDER_EXTERNAL_URL ?? ''}/set-password#token=${token}`);
   }
 
   async setPassword(token: string, password: string): Promise<void> {

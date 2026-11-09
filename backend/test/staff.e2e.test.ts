@@ -110,3 +110,17 @@ describe('Staff accounts, roles and sign-in', () => {
     await t.http().get('/v1/staff/me').set({ Authorization: 'Bearer abc.def.ghi' }).expect(401);
   });
 });
+
+describe('Set-password page (T-005, until the admin web exists)', () => {
+  let t: Awaited<ReturnType<typeof buildApp>>;
+  beforeAll(async () => { await resetDb(); t = await buildApp(); });
+  afterAll(() => t.close());
+
+  it('serves the page with no caching and a strict content policy', async () => {
+    const r = await t.http().get('/set-password').expect(200);
+    expect(r.headers['content-type']).toMatch(/text\/html/);
+    expect(r.headers['cache-control']).toBe('no-store');
+    expect(r.headers['content-security-policy']).toContain("default-src 'none'");
+    expect(r.text).toContain('/v1/staff/auth/set-password');
+  });
+});

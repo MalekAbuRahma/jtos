@@ -9,6 +9,7 @@ import { CONFIG_TOKEN, DB_TOKEN } from './common/tokens';
 import { AppConfig } from './config';
 import { DB } from './db/database';
 import { HealthController } from './health.controller';
+import { SetPasswordPageController } from './staff/set-password.page';
 import { DriverExtrasController, PassengerExtrasController, PublicShareController } from './extras/extras.controller';
 import { ExtrasService } from './extras/extras.service';
 import { CasesService } from './cases/cases.service';
@@ -47,7 +48,7 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [JwtModule.register({ secret: cfg.jwtSecret })],
-      controllers: [HealthController, StaffAuthController, StaffController, SettingsController, AuditController,
+      controllers: [HealthController, SetPasswordPageController, StaffAuthController, StaffController, SettingsController, AuditController,
         PassengerAuthController, PassengerMeController, DriverAuthController, DriverMeController, ApplicationsController,
         DriverTripsController, PublicController, StaffTripsController,
         PassengerBookingController, DriverRequestsController,

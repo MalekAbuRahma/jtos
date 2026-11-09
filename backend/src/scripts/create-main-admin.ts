@@ -21,7 +21,8 @@ export async function ensureMainAdmin(url: string, email: string, name: string):
       await trx.insertInto('staff_invitations').values({ staff_id: s.id, token_hash: sha256(token), expires_at: new Date(Date.now() + 24 * 3600_000) }).execute();
       await sql`INSERT INTO audit_log (actor_type, action, record_type, record_id) VALUES ('system', 'staff.main_admin_created', 'staff', ${s.id})`.execute(trx);
     });
-    console.log(`Main admin created. Set your password within 24 hours with token:\n${token}`);
+    const base = process.env.PUBLIC_URL ?? process.env.RENDER_EXTERNAL_URL ?? '';
+    console.log(`Main admin created. Set your password within 24 hours with token:\n${token}\nor open: ${base}/set-password#token=${token}`);
   } finally {
     await db.destroy();
   }
