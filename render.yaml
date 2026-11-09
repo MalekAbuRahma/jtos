@@ -8,6 +8,7 @@ services:
     runtime: node
     rootDir: backend
     plan: free
+    region: frankfurt
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /health
