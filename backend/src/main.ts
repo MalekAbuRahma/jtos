@@ -7,10 +7,15 @@ import { PassengerTripDayService } from './tripday/passenger-tripday.service';
 import { loadConfig } from './config';
 import { createDb } from './db/database';
 import { migrate } from './db/migrate';
+import { ensureMainAdmin } from './scripts/create-main-admin';
 
 async function bootstrap() {
   const cfg = loadConfig();
   await migrate(cfg.databaseUrl);
+  // Free staging has no shell: create the main admin once from env vars (no-op if one exists).
+  if (process.env.MAIN_ADMIN_EMAIL && process.env.MAIN_ADMIN_NAME) {
+    await ensureMainAdmin(cfg.databaseUrl, process.env.MAIN_ADMIN_EMAIL, process.env.MAIN_ADMIN_NAME);
+  }
   const app = await NestFactory.create(AppModule.create(cfg, createDb(cfg.databaseUrl)));
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
   app.enableShutdownHooks();

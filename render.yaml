@@ -1,11 +1,13 @@
-# Render blueprint — STAGING ONLY (ADR 0005). Test data only (JTOS-115).
-# In Render: New → Blueprint → pick this repo. Then set MAIN_ADMIN_* and run the setup script once.
+# Render blueprint — STAGING ONLY (ADR 0005). Test data only (JTOS-115). Cost: $0.
+# Free plan: the API sleeps after 15 min without visits; the first visit wakes it (about 1 min).
+# Database: free Neon Postgres (Render's free database is deleted after 30 days, so we don't use it).
+# In Render: New → Blueprint → pick this repo, then paste DATABASE_URL (from Neon) and MAIN_ADMIN_*.
 services:
   - type: web
     name: jtos-api-staging
     runtime: node
     rootDir: backend
-    plan: starter
+    plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /health
@@ -20,10 +22,8 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: jtos-db-staging
-          property: connectionString
-databases:
-  - name: jtos-db-staging
-    plan: basic-256mb
-    postgresMajorVersion: "16"
+        sync: false
+      - key: MAIN_ADMIN_EMAIL
+        sync: false
+      - key: MAIN_ADMIN_NAME
+        sync: false
